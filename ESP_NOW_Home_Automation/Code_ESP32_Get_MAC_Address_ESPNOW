@@ -1,0 +1,27 @@
+#include <WiFi.h>
+
+void setup() {
+  Serial.begin(115200);
+
+  // Set WiFi to station mode
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
+  Serial.println();
+  Serial.println("Getting MAC Address...");
+
+  delay(1000);        // Give some time to initialize properly
+
+  // Get the MAC address
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+
+  // Print MAC address in ESP-NOW format
+  Serial.print("ESP32 MAC Address: ");
+  Serial.printf("{0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X};\n",
+                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+
+void loop() {
+  // Do nothing
+}
