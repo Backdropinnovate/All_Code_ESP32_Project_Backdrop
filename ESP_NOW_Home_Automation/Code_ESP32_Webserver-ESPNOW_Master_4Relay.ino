@@ -1,24 +1,3 @@
-/**********************************************************************************
- *  TITLE: (Master) ESP-NOW Webserver (AP) control 4 Relays using ESP32 with OLED Real time feedback
- *  Click on the following links to learn more. 
- *  YouTube Video: https://youtu.be/QtJa5adt2hk
- *  Related Blog : https://iotcircuithub.com/esp32-web-server-esp-now-relay-control-with-oled/
- *  
- *  This code is provided free for project purpose and fair use only.
- *  Please do mail us to techstudycell@gmail.com if you want to use it commercially.
- *  Copyrighted © by Tech StudyCell
- *  
- *  Preferences--> Aditional boards Manager URLs : 
- *  https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json, http://arduino.esp8266.com/stable/package_esp8266com_index.json
- *  
- *  Download Board ESP32 (3.2.0) : https://github.com/espressif/arduino-esp32
- *
- *  Download the libraries: 
- *  Adafruit_SSD1306 Library (2.5.13): https://github.com/adafruit/Adafruit_SSD1306
- *  Adafruit Unified Sensor library (1.1.15): https://github.com/adafruit/Adafruit_Sensor
- *  AceButton Library (1.10.1): https://github.com/bxparks/AceButton
- **********************************************************************************/
-
 #include <WiFi.h>
 #include <WebServer.h>
 #include <esp_now.h>
@@ -35,8 +14,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define LED_BUILTIN 2  // Built-in LED to indicate slave connection status
 
-const char* ssid = "ESP32_Relay";  // WiFi AP SSID
-const char* password = "12345678";  // WiFi AP password
+const char* ssid = "ESP32_Relay";  // WiFi  SSID
+const char* password = "12345678";  // WiFi  password
 
 const int buttonPins[] = {13, 12, 14, 27};  // Pin assignments for 4 buttons
 const int numButtons = 4;  // Total number of buttons
