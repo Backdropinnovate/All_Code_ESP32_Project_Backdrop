@@ -1,22 +1,3 @@
-/**********************************************************************************
- *  TITLE: (Slave) ESP-NOW control 4 Relays using ESP32 with OLED Real time feedback
- *  Click on the following links to learn more. 
- *  YouTube Video: https://youtu.be/fx9Y3sXXmHs
- *  Related Blog : https://iotcircuithub.com/esp32-espnow-relay-control-with-oled-feedback/
- *  
- *  This code is provided free for project purpose and fair use only.
- *  Please do mail us to techstudycell@gmail.com if you want to use it commercially.
- *  Copyrighted © by Tech StudyCell
- *  
- *  Preferences--> Aditional boards Manager URLs : 
- *  https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json, http://arduino.esp8266.com/stable/package_esp8266com_index.json
- *  
- *  Download Board ESP32 (3.2.0) : https://github.com/espressif/arduino-esp32
- *
- *  Download the libraries: 
- *  AceButton Library (1.10.1): https://github.com/bxparks/AceButton
- **********************************************************************************/
-
 #include <WiFi.h>
 #include <esp_now.h>
 #include <AceButton.h>
