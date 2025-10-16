@@ -1,0 +1,182 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
+
+// --- OLED Setup ---
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// --- Soil Sensor Pins ---
+const int soilPins[7] = {34, 35, 32, 33, 25, 26, 27};
+int soilValues[7];
+
+// --- Buttons ---
+#define BTN_UP 14
+#define BTN_DOWN 12
+#define BTN_OK 13
+
+int menuIndex = 0;    // Main menu index
+int subMenuIndex = 0; // For inside levels
+bool inSubMenu = false;
+
+// --- Level Variables ---
+float level1 = 0, level2 = 0, totalAverage = 0;
+
+// --- Function to Read Sensor Values ---
+void readSoilSensors() {
+  int total = 0;
+  for (int i = 0; i < 7; i++) {
+    soilValues[i] = analogRead(soilPins[i]);
+    total += soilValues[i];
+  }
+
+  // Calculate Level 1 (Sensors 1–4)
+  level1 = (soilValues[0] + soilValues[1] + soilValues[2] + soilValues[3]) / 4.0;
+  // Calculate Level 2 (Sensors 5–7)
+  level2 = (soilValues[4] + soilValues[5] + soilValues[6]) / 3.0;
+  // Calculate Total Average
+  totalAverage = total / 7.0;
+}
+
+// --- OLED Display Helper ---
+void showText(int x, int y, String text, bool highlight = false) {
+  if (highlight) {
+    display.fillRect(0, y - 2, 128, 10, SH110X_WHITE);
+    display.setTextColor(SH110X_BLACK);
+  } else {
+    display.setTextColor(SH110X_WHITE);
+  }
+  display.setCursor(x, y);
+  display.print(text);
+  display.setTextColor(SH110X_WHITE);
+}
+
+// --- Main Menu Display ---
+void showMainMenu() {
+  display.clearDisplay();
+  display.setTextSize(1);
+
+  showText(10, 10, "Level 1 Sensors", menuIndex == 0);
+  showText(10, 22, "Level 2 Sensors", menuIndex == 1);
+  showText(10, 34, "Average Values", menuIndex == 2);
+  showText(10, 46, "Exit", menuIndex == 3);
+
+  display.display();
+}
+
+// --- Level 1 Submenu (Sensors 1–4) ---
+void showLevel1Sensors() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.print("Level1 - AnalogValues");
+  for (int i = 0; i < 4; i++) {
+    display.setCursor(5, 14 + (i * 10));
+    display.print("S");
+    display.print(i + 1);
+    display.print(": ");
+    display.print(soilValues[i]);
+  }
+  display.display();
+}
+
+// --- Level 2 Submenu (Sensors 5–7) ---
+void showLevel2Sensors() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.print("Level2 - AnalogValues");
+  for (int i = 4; i < 7; i++) {
+    display.setCursor(5, 14 + ((i - 4) * 10));
+    display.print("S");
+    display.print(i + 1);
+    display.print(": ");
+    display.print(soilValues[i]);
+  }
+  display.display();
+}
+
+// --- Average Display ---
+void showAverages() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(10, 10);
+  display.print("Level1 Avg: ");
+  display.print(level1, 0);
+  display.setCursor(10, 25);
+  display.print("Level2 Avg: ");
+  display.print(level2, 0);
+  display.setCursor(10, 40);
+  display.print("Total Avg: ");
+  display.print(totalAverage, 0);
+  display.display();
+}
+
+// --- Button Read Helper ---
+bool isPressed(int pin) {
+  return digitalRead(pin) == LOW;
+}
+
+// --- Setup ---
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+
+  // OLED init
+  if (!display.begin(0x3C, true)) {
+    Serial.println("OLED not found!");
+    while (1);
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.setCursor(10, 25);
+  display.print("Soil Menu System");
+  display.display();
+  delay(1500);
+
+  // Button setup
+  pinMode(BTN_UP, INPUT_PULLUP);
+  pinMode(BTN_DOWN, INPUT_PULLUP);
+  pinMode(BTN_OK, INPUT_PULLUP);
+
+  // Sensor setup
+  for (int i = 0; i < 7; i++) pinMode(soilPins[i], INPUT);
+}
+
+// --- Main Loop ---
+void loop() {
+  readSoilSensors();
+
+  if (!inSubMenu) {
+    showMainMenu();
+
+    if (isPressed(BTN_UP)) {
+      menuIndex--;
+      if (menuIndex < 0) menuIndex = 3;
+      delay(200);
+    }
+    if (isPressed(BTN_DOWN)) {
+      menuIndex++;
+      if (menuIndex > 3) menuIndex = 0;
+      delay(200);
+    }
+    if (isPressed(BTN_OK)) {
+      if (menuIndex == 3) return; // Exit does nothing
+      inSubMenu = true;
+      delay(200);
+    }
+
+  } else {
+    if (menuIndex == 0) showLevel1Sensors();
+    else if (menuIndex == 1) showLevel2Sensors();
+    else if (menuIndex == 2) showAverages();
+
+    if (isPressed(BTN_OK)) {
+      inSubMenu = false; // Go back to main
+      delay(200);
+    }
+  }
+}
