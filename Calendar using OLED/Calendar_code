@@ -1,0 +1,124 @@
+#include <WiFi.h>
+#include <time.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
+
+// ===== USER CONFIG =====
+const char* WIFI_SSID     = "intelehack";
+const char* WIFI_PASSWORD = "12345678";
+
+// India (IST UTC+5:30)
+const long  GMT_OFFSET_SEC     = 19800;
+const int   DAYLIGHT_OFFSET_SEC = 0;
+// =======================
+
+// OLED 1.3" (SH1106)
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 0x3C);
+
+const char* months[]   = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+const char* weekdays[] = {"S","M","T","W","T","F","S"};
+
+bool getLocal(struct tm &out) {
+  time_t now = time(nullptr);
+  if (now < 1700000000) return false; // invalid time (before 2023)
+  localtime_r(&now, &out);
+  return true;
+}
+
+int daysInMonth(int year, int mon) {
+  tm t = {};
+  t.tm_year = year - 1900;
+  t.tm_mon  = mon + 1;   // next month
+  t.tm_mday = 0;         // day 0 of next month = last day of this month
+  mktime(&t);
+  return t.tm_mday;
+}
+
+void drawCalendar(const tm& t) {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+
+  // Month + Year header
+  String header = String(months[t.tm_mon]) + "  " + String(t.tm_year + 1900);
+  int16_t x1, y1; uint16_t w, h;
+  display.getTextBounds(header, 0, 0, &x1, &y1, &w, &h);
+  display.setCursor((SCREEN_WIDTH - w) / 2, 0);
+  display.print(header);
+
+  // Weekday header
+  for (int i = 0; i < 7; i++) {
+    display.setCursor(i * 18, 12);
+    display.print(weekdays[i]);
+  }
+
+  // First day of month
+  tm first = {};
+  first.tm_year = t.tm_year;
+  first.tm_mon  = t.tm_mon;
+  first.tm_mday = 1;
+  mktime(&first);
+  int startWday = first.tm_wday; // 0=Sun..6=Sat
+
+  int dim = daysInMonth(t.tm_year + 1900, t.tm_mon);
+
+  // Dates grid
+  int day = 1;
+  for (int week = 0; week < 6; week++) {
+    for (int wd = 0; wd < 7; wd++) {
+      int cellX = wd * 18;
+      int cellY = 22 + week * 8;
+
+      if (week == 0 && wd < startWday) continue;
+      if (day > dim) continue;
+
+      // Highlight today's date
+      if (day == t.tm_mday) {
+        display.fillRect(cellX, cellY, 16, 8, SH110X_WHITE);
+        display.setTextColor(SH110X_BLACK);
+        display.setCursor(cellX + 2, cellY);
+        display.print(day);
+        display.setTextColor(SH110X_WHITE);
+      } else {
+        display.setCursor(cellX + 2, cellY);
+        display.print(day);
+      }
+      day++;
+    }
+  }
+
+  display.display();
+}
+
+void setup() {
+  Wire.begin(); // SDA=21, SCL=22 (default for ESP32)
+
+  display.begin(0x3C, true); // I2C address 0x3C
+  display.clearDisplay();
+  display.display();
+
+  // WiFi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+
+  // Time from NTP
+  configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, "pool.ntp.org", "time.nist.gov");
+
+  delay(2000); // wait for sync
+}
+
+void loop() {
+  static int lastDay = -1;
+  tm t;
+  if (getLocal(t)) {
+    if (t.tm_mday != lastDay) { // redraw only when day changes
+      lastDay = t.tm_mday;
+      drawCalendar(t);
+    }
+  }
+  delay(10000); // check every 10s
+}
